@@ -55,7 +55,7 @@ Create a `.env` file in the root directory and include the following variables:
 
 ## Support
 
-For any issues or inquiries, contact the nex ッ.
+For any issues or inquiries, contact nex ッ.
 
 ----
 ----
