@@ -16,7 +16,10 @@ const config = {
     lvguideCH: process.env.LVGUIDE_CH,
     revengerCH: process.env.REVENGER_CH,
     generalCH: process.env.GENERAL_CH,
-    dragonewsCH: process.env.DRAGONEWS_CH
+    dragonewsCH: process.env.DRAGONEWS_CH,
+    blacklistCH: process.env.BLACKLIST_CH,
+    vizeRoleId: process.env.VIZE_ROLE_ID,
+    leaderRoleId: process.env.LEADER_ROLE_CH,
 };
 
 module.exports = config;
