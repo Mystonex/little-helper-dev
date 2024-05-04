@@ -1,37 +1,37 @@
 [
     {
-        "username": "GigaSchlong",
-        "reason": "Unerträglich",
-        "date": "2023-05-01",
-        "addedBy": "Helpina :p",
-        "additionalNotes": "...nix weiteres zu sagen"
-    },
-    {
-        "username": "Olly mit Lolly",
-        "reason": "Ist einfach unerträglich",
-        "date": "2024-05-03",
+        "username": "Tester",
+        "reason": "Testers",
+        "date": "2024-05-04",
         "addedBy": "mystonex",
         "additionalNotes": ""
     },
     {
-        "username": "Salamander",
-        "reason": "Nur ein Witz - er ist sehr nett.",
-        "date": "2024-05-03",
+        "username": "Dom",
+        "reason": "Zu nett.",
+        "date": "2024-05-04",
         "addedBy": "mystonex",
         "additionalNotes": ""
     },
     {
-        "username": "KnochenJochen",
-        "reason": "Mundgeruch",
-        "date": "2024-05-03",
-        "addedBy": "domschii",
+        "username": "test",
+        "reason": "test",
+        "date": "2024-05-04",
+        "addedBy": "mystonex",
         "additionalNotes": ""
     },
     {
-        "username": "Jasper der Kasper",
-        "reason": "Dieser hat wortlos die Gilde verlassen und hat nicht die Mindestmaße des Schlongs erreicht. Als dieser dann noch frech wurde, hat er seine Mutter angerufen die Oberzicke",
-        "date": "2024-05-03",
-        "addedBy": "domschii",
+        "username": "testertest",
+        "reason": "tester",
+        "date": "2024-05-04",
+        "addedBy": "mystonex",
+        "additionalNotes": ""
+    },
+    {
+        "username": "tester",
+        "reason": "tester",
+        "date": "2024-05-04",
+        "addedBy": "mystonex",
         "additionalNotes": ""
     }
 ]

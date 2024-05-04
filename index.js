@@ -1,6 +1,6 @@
 require('dotenv').config();
-const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
-const { registerCommands, handleSlashCommand, handleModalSubmitInteraction, handleButtonInteraction } = require('./slashCommands');
+const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ActivityType, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType } = require('discord.js');
+const { registerCommands, handleSlashCommand, handleModalSubmitInteraction, handleButtonInteraction, handleSelectMenuInteraction } = require('./slashCommands');
 const { setupTranslationListener } = require('./translation'); // include of the translate-bot
 const config = require('./config');
  
@@ -60,10 +60,16 @@ client.on('interactionCreate', async (interaction) => {
         await handleSlashCommand(interaction, client);
     } else if (interaction.isButton()) {
         await handleButtonInteraction(interaction);
+    } else if (interaction.isStringSelectMenu()) {
+        await handleSelectMenuInteraction(interaction);
     } else if (interaction.isModalSubmit()) {
         await handleModalSubmitInteraction(interaction);
     }
 });
+
+
+
+
 
 
 
@@ -480,3 +486,4 @@ module.exports = { config };
 
 
 client.login(token);
+
