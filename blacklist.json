@@ -1,44 +1,51 @@
 [
     {
         "username": "Kachi die Kachel",
-        "reason": "Ist halt einfach so ein Hurensohn xD",
+        "reason": "Hurensohn",
         "date": "2024-05-04",
         "addedBy": "mystonex",
-        "additionalNotes": ""
+        "additionalNotes": "Ist halt einfach so ein Hurensohn xD"
     },
     {
         "username": "Willi der Wilde",
-        "reason": "Ist eigentlich ganz nett - zwischendurch - aber er schaut mich immer so komisch an.",
+        "reason": "Komischer Typ",
         "date": "2024-05-04",
         "addedBy": "mystonex",
-        "additionalNotes": ""
+        "additionalNotes": "Ist eigentlich ganz nett - zwischendurch - aber er schaut mich immer so komisch an"
     },
     {
         "username": "Olly mit Lolly",
-        "reason": "Wer mag schon Lollys...?",
+        "reason": "Lollylover",
         "date": "2024-05-04",
         "addedBy": "mystonex",
-        "additionalNotes": ""
-    },
-    {
-        "username": "Kreezy",
-        "reason": "Naja - selbsterklärend xDD",
-        "date": "2024-05-04",
-        "addedBy": "mystonex",
-        "additionalNotes": ""
+        "additionalNotes": "Wer mag schon Lollys...?"
     },
     {
         "username": "EpicWeed",
-        "reason": "Wenn er weiter so macht :(",
+        "reason": "Haare",
         "date": "2024-05-04",
-        "addedBy": "mystonex",
-        "additionalNotes": ""
+        "addedBy": "domschii",
+        "additionalNotes": "Wenn er weiter so macht und die Haare weiter Wachsen :("
     },
     {
         "username": "Die beiden Trottels Dick und Doof",
-        "reason": "Spielen eh was anderes AMK",
+        "reason": "Asis",
         "date": "2024-05-04",
         "addedBy": "mystonex",
-        "additionalNotes": ""
+        "additionalNotes": "Spielen eh was anderes AMK"
+    },
+    {
+        "username": "Nex",
+        "reason": "Verbannt",
+        "date": "2024-05-04",
+        "addedBy": "domschii",
+        "additionalNotes": "Weil er bei DoM das M klein schreibt !"
+    },
+    {
+        "username": "ProvinzVince",
+        "reason": "Beleidigung",
+        "date": "2024-05-04",
+        "addedBy": "domschii",
+        "additionalNotes": "Er beleidigt alle"
     }
 ]

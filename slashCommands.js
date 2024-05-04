@@ -92,14 +92,23 @@ function createAddUserModal() {
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
-                    .setCustomId('reason')
-                    .setLabel("Begründung für Blacklist")
-                    .setStyle(TextInputStyle.Paragraph)
+                    .setCustomId('shortReason')
+                    .setLabel("Kurzbegründung")
+                    .setStyle(TextInputStyle.Short)
                     .setRequired(true)
-                    .setPlaceholder('Bsp: Lacht nicht über Doms Witze. 😤')
+                    .setPlaceholder('Bsp: Unfreundlich')
+            ),
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('longReason')
+                    .setLabel("Ausführliche Begründung")
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(false)
+                    .setPlaceholder('Ausführliche Erklärung, warum der Benutzer auf die Blacklist kommt.')
             )
         );
 }
+
 
 async function showSelectMenu(interaction) {
     const rawData = await fs.readFile('blacklist.json', 'utf8');
@@ -113,7 +122,7 @@ async function showSelectMenu(interaction) {
 
     const selectMenu = new SelectMenuBuilder()
         .setCustomId('select-blacklist-user')
-        .setPlaceholder('Wähle einen Benutzer')
+        .setPlaceholder('Wähle einen Benutzer aus, um Aktionen durchzuführen.')
         .addOptions(options);
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
@@ -130,7 +139,7 @@ async function showSelectMenu(interaction) {
         .setLabel('Blacklist Posten')
         .setStyle(ButtonStyle.Secondary);
 
-    await interaction.reply({ content: 'Verwalte die Blacklist:', components: [row, new ActionRowBuilder().addComponents(addButton, listButton, postButton)], ephemeral: true });
+    await interaction.reply({ content: 'Willkommen im Helpina Blacklist Manager.\nMit den Buttons ganz unten, kannst du einzelne Funktionen aktivieren.\n\n- **Benutzer Hinzufügen** - Fügt einen neuen Benutzer der Blacklist hinzu.\n- **Benutzerliste Anschauen** - Zeigt dir einen aktuellen auszug der Blacklist.\n- **Blacklist Posten** - Helpina Postet die aktuelle Blacklist im aktuellen Channel.\n\nIn der Auswahl hier, kannst du einzelne Benutzer verwalten:', components: [row, new ActionRowBuilder().addComponents(addButton, listButton, postButton)], ephemeral: true });
 }
 
 
@@ -177,7 +186,7 @@ async function startDiscussion(interaction, index) {
         autoArchiveDuration: 60
     });
     await thread.send({
-        content: `**Blacklist-Grund:** \n*${user.reason}*\n\n**Gebannt von:** \n${user.addedBy}\n\n**Gebannt am:** \n${user.date} (Das sind jetzt ${diffDays} Tage)\n------\nWas willst du ansprechen **${interaction.user.tag}**?`
+        content: `**Blacklist-Grund (Kurzversion):** \n*${user.reason}*\n\n**Blacklist-Grund (Auführlich):** \n*${user.additionalNotes}*\n\n**Gebannt von:** \n${user.addedBy}\n\n**Gebannt am:** \n${user.date} (Das sind jetzt ${diffDays} Tage)\n------\nWas willst du besprechen **${interaction.user.tag}**?`
     });
 
     await interaction.reply({ content: `Diskussionsthread gestartet für **${user.username}**.`, ephemeral: true });
@@ -187,15 +196,19 @@ async function startDiscussion(interaction, index) {
 
 
 async function handleSelectMenuInteraction(interaction) {
+    const rawData = await fs.readFile('blacklist.json', 'utf8');
+    const blacklist = JSON.parse(rawData);
     const selectedValue = interaction.values[0];
     const index = parseInt(selectedValue.split('-')[1], 10);
 
-    if (!isNaN(index)) {
+    if (!isNaN(index) && index >= 0 && index < blacklist.length) {
+        const user = blacklist[index];  // Define user based on the selected index
+
         const userOptions = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
                     .setCustomId(`edit-user-${index}`)
-                    .setLabel('Editieren')
+                    .setLabel('Details')
                     .setStyle(ButtonStyle.Primary),
                 new ButtonBuilder()
                     .setCustomId(`delete-user-${index}`)
@@ -207,11 +220,12 @@ async function handleSelectMenuInteraction(interaction) {
                     .setStyle(ButtonStyle.Secondary)
             );
 
-        await interaction.reply({ content: "Was möchtest du Tun?", components: [userOptions], ephemeral: true });
+        await interaction.reply({ content: `Was möchtest du mit **${user.username}** tun?`, components: [userOptions], ephemeral: true });
     } else {
         await interaction.reply({ content: "Error: Was machst du, es geht nicht. Berichte Nex davon.", ephemeral: true });
     }
 }
+
 
 
 
@@ -226,28 +240,37 @@ async function showBlacklistUser(interaction, index) {
     const user = blacklist[index];
     const modal = new ModalBuilder()
         .setCustomId(`edit-blacklist-user-${index}`)
-        .setTitle('Edit Blacklist User')
+        .setTitle('Benutzer Editieren')
         .addComponents(
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
                     .setCustomId('username')
-                    .setLabel('Username')
+                    .setLabel('Namen')
                     .setStyle(TextInputStyle.Short)
                     .setValue(user.username)
                     .setRequired(true)
             ),
             new ActionRowBuilder().addComponents(
                 new TextInputBuilder()
-                    .setCustomId('reason')
-                    .setLabel('Reason')
-                    .setStyle(TextInputStyle.Paragraph)
+                    .setCustomId('shortReason')
+                    .setLabel('Kurzbegründung')
+                    .setStyle(TextInputStyle.Short)
                     .setValue(user.reason)
                     .setRequired(true)
+            ),
+            new ActionRowBuilder().addComponents(
+                new TextInputBuilder()
+                    .setCustomId('longReason')
+                    .setLabel('Ausführliche Begründung')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setValue(user.additionalNotes)
+                    .setRequired(false)
             )
         );
 
     await interaction.showModal(modal);
 }
+
 
 
 
@@ -259,16 +282,15 @@ async function sendBlacklistContent(interaction) {
         const embed = new EmbedBuilder()
             .setColor(0x0099FF)
             .setTitle('Aktuelle Blacklist')
-            .setDescription('Hier sind die aktuellen Einträge der Blacklist.');
+            .setDescription('Hier sind die aktuellen Einträge der Blacklist in Kurzform.');
 
         blacklist.forEach((user, index) => {
             const truncatedReason = user.reason.length > 1020 ? `${user.reason.substring(0, 1017)}...` : user.reason;
-            // Adding a separator before each entry except the first
             const separator = index === 0 ? '' : '\n-----------------------------\n';
-            embed.addFields({ 
-                name: `${separator}${index + 1}. ${user.username}`, 
-                value: `**Begründung:** ${truncatedReason}`, 
-                inline: false 
+            embed.addFields({
+                name: `${separator}${index + 1}. ${user.username}`,
+                value: `**Kurzbegründung:** ${truncatedReason}`,
+                inline: false
             });
         });
 
@@ -283,16 +305,18 @@ async function sendBlacklistContent(interaction) {
 
 
 
+
 function formatBlacklistEntry(user) {
     // Ensure all required fields are present
     return {
         username: user.username,
-        reason: user.reason,
+        reason: user.reason, // Now treated as the short reason
         date: user.date || new Date().toISOString().split('T')[0], // Use current date if not provided
         addedBy: user.addedBy || 'System', // Default to 'System' if not provided
         additionalNotes: user.additionalNotes || '' // Default to an empty string if not provided
     };
 }
+
 
 
 async function handleModalSubmitInteraction(interaction) {
@@ -313,11 +337,13 @@ async function handleModalSubmitInteraction(interaction) {
 
         const user = blacklist[index];
         const username = interaction.fields.getTextInputValue('username');
-        const reason = interaction.fields.getTextInputValue('reason');
+        const shortReason = interaction.fields.getTextInputValue('shortReason');
+        const longReason = interaction.fields.getTextInputValue('longReason') || user.longReason;
 
         // Update user data
         user.username = username;
-        user.reason = reason;
+        user.reason = shortReason;
+        user.additionalNotes = longReason;
         user.date = new Date().toISOString().split('T')[0];
         user.addedBy = interaction.user.tag;
 
@@ -326,16 +352,17 @@ async function handleModalSubmitInteraction(interaction) {
         // await logAction(`Blacklist updated: **${username}** by **${interaction.user.tag}**`);
     } else if (interaction.customId === 'addUserModal') {
         const username = interaction.fields.getTextInputValue('username');
-        const reason = interaction.fields.getTextInputValue('reason');
+        const shortReason = interaction.fields.getTextInputValue('shortReason');
+        const longReason = interaction.fields.getTextInputValue('longReason') || '';
 
         const blacklist = JSON.parse(await fs.readFile('blacklist.json', 'utf8'));
 
         const newEntry = {
             username,
-            reason,
+            reason: shortReason,
             date: new Date().toISOString().split('T')[0],
             addedBy: interaction.user.tag,
-            additionalNotes: ''
+            additionalNotes: longReason
         };
 
         blacklist.push(newEntry);
@@ -344,6 +371,7 @@ async function handleModalSubmitInteraction(interaction) {
         //await logActionSlashcommands(`New blacklist addition: **${username}** by **${interaction.user.tag}**`);
     }
 }
+
 
 
 async function deleteBlacklistUser(interaction, index) {
@@ -367,26 +395,22 @@ async function postBlacklist(interaction) {
     try {
         const data = await fs.readFile('blacklist.json', 'utf8');
         const blacklist = JSON.parse(data);
-        const today = new Date().toLocaleDateString("de-DE"); // Format date as DD.MM.YYYY
+        const today = new Date().toLocaleDateString("de-DE");
         let currentEmbed = new EmbedBuilder()
             .setTitle(`Aktuelle Blacklist - Stand vom: ${today}`)
             .setColor(0x0099FF);
 
         blacklist.forEach((user, index) => {
-            // Add the separator for entries after the first
             const separator = index === 0 ? '' : '\n────────────────────────────────────────\n';
-            const entryText = `**Begründung:** ${user.reason.length > 1020 ? `${user.reason.substring(0, 1017)}...` : user.reason}\n**Hinzugefügt am:** ${user.date}\n**Hinzugefügt von:** ${user.addedBy}`;
-
+            const entryText = `**Kurzbegründung:** ${user.reason}\n**Ausführliche Begründung:** ${user.additionalNotes}\n**Hinzugefügt am:** ${user.date}\n**Hinzugefügt von:** ${user.addedBy}`;
             if (index > 0) { // Add separator before the entry if it's not the first entry
                 currentEmbed.addFields({ name: '\u200b', value: separator, inline: false });
             }
-
             currentEmbed.addFields({ name: `${index + 1}. ${user.username}`, value: entryText, inline: false });
         });
 
         // Check if the current embed exceeds Discord's character limit and handle appropriately
         if (currentEmbed.toJSON().length > 6000 || currentEmbed.data.fields.length >= 25) {
-            // Handle splitting into multiple embeds or messages here
             console.log("Embed is too large, consider implementing pagination or splitting into multiple messages.");
         }
 
@@ -398,6 +422,7 @@ async function postBlacklist(interaction) {
         await interaction.reply({ content: "Es gab einen Fehler beim Posten der Blacklist.", ephemeral: true });
     }
 }
+
 
 
 
