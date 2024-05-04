@@ -1,5 +1,6 @@
 # Ignore .env files
 .env
+blacklist.json
 
 # Ignore all folders (only files)
 */

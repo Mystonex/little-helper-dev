@@ -38,6 +38,34 @@ async function registerCommands(clientId) {
     }
 }
 
+
+const path = require('path');
+
+// Utility function to write to an audit log
+async function auditLog(type, username, data) {
+    const timestamp = new Date().toISOString().replace(/:/g, '-'); // Replace colons in timestamps to ensure file name is valid
+    const sanitizedUsername = username.replace(/[^a-zA-Z0-9]/g, '_'); // Replace any non-alphanumeric characters in username
+    const folderPath = path.join(__dirname, 'Blacklist-Auditing', type);
+    const filePath = path.join(folderPath, `${type}-${sanitizedUsername}-${timestamp}.json`);
+
+    console.log(`Folder path: ${folderPath}`);
+    console.log(`File path: ${filePath}`);
+
+    try {
+        await fs.mkdir(folderPath, { recursive: true });
+        await fs.writeFile(filePath, JSON.stringify(data, null, 4));
+        console.log(`Audit log created: ${filePath}`);
+    } catch (error) {
+        console.error('Failed to create audit log:', error);
+    }
+}
+
+
+
+
+
+
+
 async function handleSlashCommand(interaction, client) {
     switch (interaction.commandName) {
         case 'hilfe':
@@ -111,12 +139,37 @@ function createAddUserModal() {
 
 
 async function showSelectMenu(interaction) {
+    const addButton = new ButtonBuilder()
+        .setCustomId('add-new-blacklist-user')
+        .setLabel('Benutzer hinzufügen')
+        .setStyle(ButtonStyle.Success);
+    const listButton = new ButtonBuilder()
+        .setCustomId('list-blacklist-users')
+        .setLabel('Blacklist Anschauen')
+        .setStyle(ButtonStyle.Secondary);
+    const editButton = new ButtonBuilder()
+        .setCustomId('edit-blacklist-user')
+        .setLabel('Benutzer bearbeiten')
+        .setStyle(ButtonStyle.Primary);
+    const postButton = new ButtonBuilder()
+        .setCustomId('post-blacklist')
+        .setLabel('Blacklist Posten')
+        .setStyle(ButtonStyle.Secondary);
+
+    await interaction.reply({
+        content: 'Willkommen im Helpina Blacklist Manager.\nMit den Buttons unten, kannst du einzelne Funktionen aktivieren:\n\n- **Benutzer Hinzufügen** - Fügt einen neuen Benutzer der Blacklist hinzu.\n- **Benutzer Bearbeiten** - Wähle und bearbeite bestehende Blacklist-Benutzer.\n- **Blacklist Anschauen** - Zeigt dir einen aktuellen Auszug der Blacklist.\n- **Blacklist Posten** - Helpina Postet die aktuelle Blacklist im aktuellen Channel.\n\n',
+        components: [new ActionRowBuilder().addComponents(addButton, editButton, listButton, postButton)],
+        ephemeral: true
+    });
+}
+
+async function showSelectMenuForEditing(interaction) {
     const rawData = await fs.readFile('blacklist.json', 'utf8');
     const blacklist = JSON.parse(rawData).map(user => formatBlacklistEntry(user));
 
     const options = blacklist.map((user, index) => ({
-        label: `${index + 1}. ${user.username}`, // Prepend index to the username
-        description: user.reason.substring(0, 50),
+        label: `${index + 1}. ${user.username}`,
+        description: user.reason.substring(0, 50), // Shorten the description to fit
         value: `user-${index}`
     }));
 
@@ -126,20 +179,12 @@ async function showSelectMenu(interaction) {
         .addOptions(options);
 
     const row = new ActionRowBuilder().addComponents(selectMenu);
-    const addButton = new ButtonBuilder()
-        .setCustomId('add-new-blacklist-user')
-        .setLabel('Benutzer hinzufügen')
-        .setStyle(ButtonStyle.Success);
-    const listButton = new ButtonBuilder()
-        .setCustomId('list-blacklist-users')
-        .setLabel('Benutzerliste Anschauen')
-        .setStyle(ButtonStyle.Primary);
-    const postButton = new ButtonBuilder()
-        .setCustomId('post-blacklist')
-        .setLabel('Blacklist Posten')
-        .setStyle(ButtonStyle.Secondary);
 
-    await interaction.reply({ content: 'Willkommen im Helpina Blacklist Manager.\nMit den Buttons ganz unten, kannst du einzelne Funktionen aktivieren.\n\n- **Benutzer Hinzufügen** - Fügt einen neuen Benutzer der Blacklist hinzu.\n- **Benutzerliste Anschauen** - Zeigt dir einen aktuellen auszug der Blacklist.\n- **Blacklist Posten** - Helpina Postet die aktuelle Blacklist im aktuellen Channel.\n\nIn der Auswahl hier, kannst du einzelne Benutzer verwalten:', components: [row, new ActionRowBuilder().addComponents(addButton, listButton, postButton)], ephemeral: true });
+    await interaction.reply({
+        content: 'Wähle einen Benutzer aus der Liste zum Bearbeiten:',
+        components: [row],
+        ephemeral: true
+    });
 }
 
 
@@ -162,8 +207,14 @@ async function handleButtonInteraction(interaction) {
         await startDiscussion(interaction, index);
     } else if (interaction.customId.startsWith('post-blacklist')) {
         await postBlacklist(interaction);
+    } else if (interaction.customId === 'edit-blacklist-user') {
+        // Call the function to show the select menu for editing a blacklist user
+        await showSelectMenuForEditing(interaction);  // We will define this function next
     }
 }
+
+
+
 
 
 async function startDiscussion(interaction, index) {
@@ -323,7 +374,7 @@ async function handleModalSubmitInteraction(interaction) {
     if (interaction.customId.startsWith('edit-blacklist-user')) {
         const indexPart = interaction.customId.split('-')[3]; // Make sure the index is the correct part
         const index = parseInt(indexPart, 10);
-        
+
         if (isNaN(index)) {
             return interaction.reply({ content: "Invalid user index format. Ask Nex for Help :D", ephemeral: true });
         }
@@ -336,6 +387,7 @@ async function handleModalSubmitInteraction(interaction) {
         }
 
         const user = blacklist[index];
+        const oldData = { ...user }; // Snapshot of the data before changes
         const username = interaction.fields.getTextInputValue('username');
         const shortReason = interaction.fields.getTextInputValue('shortReason');
         const longReason = interaction.fields.getTextInputValue('longReason') || user.longReason;
@@ -347,10 +399,13 @@ async function handleModalSubmitInteraction(interaction) {
         user.date = new Date().toISOString().split('T')[0];
         user.addedBy = interaction.user.tag;
 
+        // Log the edit before saving
+        await auditLog('edits', username, { oldData, newData: user, editedBy: interaction.user.tag });
+
         await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
         await interaction.reply({ content: "Blacklist wurde erfolgreich aktualisert.", ephemeral: true });
-        // await logAction(`Blacklist updated: **${username}** by **${interaction.user.tag}**`);
     } else if (interaction.customId === 'addUserModal') {
+        // Handle adding a new user (code remains unchanged)
         const username = interaction.fields.getTextInputValue('username');
         const shortReason = interaction.fields.getTextInputValue('shortReason');
         const longReason = interaction.fields.getTextInputValue('longReason') || '';
@@ -368,9 +423,9 @@ async function handleModalSubmitInteraction(interaction) {
         blacklist.push(newEntry);
         await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
         await interaction.reply({ content: `**${username}** mit kleinem 🤏 wurde der Blacklist hinzugefügt. War sicher berechtigt 🤭.`, ephemeral: true });
-        //await logActionSlashcommands(`New blacklist addition: **${username}** by **${interaction.user.tag}**`);
     }
 }
+
 
 
 
@@ -382,10 +437,15 @@ async function deleteBlacklistUser(interaction, index) {
         return;
     }
     
+    // Creating a backup before deletion
+    await auditLog('backups', blacklist[index].username, { deletedBy: interaction.user.tag, blacklist });
+
+    // Deleting the user from the blacklist
     blacklist.splice(index, 1);
     await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
-    await interaction.reply({ content: "Benutzer aus der Blacklist entfernt. 👾.", ephemeral: true });
+    await interaction.reply({ content: "Benutzer aus der Blacklist entfernt. 👾", ephemeral: true });
 }
+
 
 
 
