@@ -9,6 +9,7 @@ This bot is designed to facilitate the onboarding process and enhance member eng
 - **Role Management**: Dynamically assigns roles to members as they progress through their guild journey.
 - **Translation Services**: Offers real-time translation to ensure all members can interact seamlessly.
 - **Command Handling**: Provides custom slash commands for member interactions and inquiries.
+- **Blacklist Management**: Provides a comprehensive Blacklist-Management Tool with Auditing and Backups.
 
 ## Requirements
 
@@ -46,6 +47,9 @@ Create a `.env` file in the root directory and include the following variables:
 - `REVENGER_CH`: Channel ID for RevenGER community interactions.
 - `GENERAL_CH`: General chat channel ID.
 - `DRAGONEWS_CH`: Channel ID for Dragon news updates.
+- `BLACKLIST_CH` : Channel for the Blacklisting.
+- `VIZE_ROLE_ID`: Role ID of the "Vize" Role.
+- `LEADER_ROLE_CH`: Role ID of the "Leader" Role.
 
 ## Usage
 
@@ -73,6 +77,7 @@ Dieser Bot wurde entwickelt, um den Onboarding-Prozess zu erleichtern und die Mi
 - **Rollenverwaltung**: Weist Mitgliedern dynamisch Rollen zu, während sie ihre Gildenreise fortsetzen.
 - **Übersetzungsdienste**: Bietet Echtzeitübersetzungen, um sicherzustellen, dass alle Mitglieder nahtlos interagieren können.
 - **Befehlsverarbeitung**: Bietet benutzerdefinierte Schrägstrichbefehle für Mitgliederinteraktionen und -anfragen.
+- **Blacklist Management**: Bietet ein Umfangreiches Blacklist-Management mit Auditing und Backups.
 
 ## Anforderungen
 
@@ -110,6 +115,9 @@ Erstellen Sie eine `.env`-Datei im Stammverzeichnis und fügen Sie die folgenden
 - `REVENGER_CH`: Kanal-ID für Interaktionen der RevenGER-Community.
 - `GENERAL_CH`: Kanal-ID für allgemeinen Chat.
 - `DRAGONEWS_CH`: Kanal-ID für Updates zu Drachennachrichten.
+- `BLACKLIST_CH` : Kanal-ID für den Blacklist Channel.
+- `VIZE_ROLE_ID`: Rollen-ID für Vizen.
+- `LEADER_ROLE_CH`: Rollen-ID für Leader.
 
 ## Verwendung
 
