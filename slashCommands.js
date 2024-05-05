@@ -66,7 +66,7 @@ async function auditLog(type, username, data) {
 
 
 
-async function handleSlashCommand(interaction, client) {
+async function handleSlashCommand(interaction, client, logAction) {
     switch (interaction.commandName) {
         case 'hilfe':
             const helpMessage = `Huch, ich habe gehört, dass ich dir helfen kann?\nIch kann dir momentan folgende Funktionen anbieten, die du auf dem Server ausführen kannst:\n\n- **/hilfe** - Erhalte Hilfe von Helpina 🤩!\n- **/rename** - Ändere deinen Nicknamen!\n- **/einführung** - Starte die Einführung erneut.\n- **/blacklist** - Manage the blacklist for the server.\n\nSuchst du Guides, oder brauchst andere Hilfe?\n[Hier sind die Guides](${config.guideCH})\n\nDu kannst auch einfach die anderen RevenGER fragen \n[Andere RevenGER fragen](${config.revengerCH})`;
@@ -191,27 +191,28 @@ async function showSelectMenuForEditing(interaction) {
 
 
 
-async function handleButtonInteraction(interaction) {
+async function handleButtonInteraction(interaction, client, logAction) {
     if (interaction.customId.startsWith('add-new-blacklist-user')) {
         await interaction.showModal(createAddUserModal());
     } else if (interaction.customId.startsWith('list-blacklist-users')) {
         await sendBlacklistContent(interaction);
     } else if (interaction.customId.startsWith('edit-user-')) {
         const index = parseInt(interaction.customId.split('-')[2], 10);
-        await showBlacklistUser(interaction, index);
+        await showBlacklistUser(interaction, index, client, logAction);
     } else if (interaction.customId.startsWith('delete-user-')) {
         const index = parseInt(interaction.customId.split('-')[2], 10);
-        await deleteBlacklistUser(interaction, index);
+        await deleteBlacklistUser(interaction, index, client, logAction);
     } else if (interaction.customId.startsWith('start-discussion-')) {
         const index = parseInt(interaction.customId.split('-')[2], 10);
-        await startDiscussion(interaction, index);
+        await startDiscussion(interaction, index, client, logAction);
     } else if (interaction.customId.startsWith('post-blacklist')) {
-        await postBlacklist(interaction);
+        await postBlacklist(interaction, client, logAction);
     } else if (interaction.customId === 'edit-blacklist-user') {
-        // Call the function to show the select menu for editing a blacklist user
-        await showSelectMenuForEditing(interaction);  // We will define this function next
+        await showSelectMenuForEditing(interaction, client, logAction);
     }
 }
+
+
 
 
 
@@ -370,9 +371,28 @@ function formatBlacklistEntry(user) {
 
 
 
-async function handleModalSubmitInteraction(interaction) {
-    if (interaction.customId.startsWith('edit-blacklist-user')) {
-        const indexPart = interaction.customId.split('-')[3]; // Make sure the index is the correct part
+async function handleModalSubmitInteraction(interaction, client, logAction) {
+    if (interaction.customId === 'addUserModal') {
+        const username = interaction.fields.getTextInputValue('username');
+        const shortReason = interaction.fields.getTextInputValue('shortReason');
+        const longReason = interaction.fields.getTextInputValue('longReason') || '';
+
+        const blacklist = JSON.parse(await fs.readFile('blacklist.json', 'utf8'));
+
+        const newEntry = {
+            username,
+            reason: shortReason,
+            date: new Date().toISOString().split('T')[0],
+            addedBy: interaction.user.tag,
+            additionalNotes: longReason
+        };
+
+        blacklist.push(newEntry);
+        await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
+        await interaction.reply({ content: `**${username}** mit kleinem 🤏 wurde der Blacklist hinzugefügt. War sicher berechtigt 🤭.`, ephemeral: true });
+        await logAction(`**${interaction.user.tag}** hat **${username}** der Blacklist hinzugefügt. ❌`);
+    } else if (interaction.customId.startsWith('edit-blacklist-user')) {
+        const indexPart = interaction.customId.split('-')[3]; 
         const index = parseInt(indexPart, 10);
 
         if (isNaN(index)) {
@@ -403,48 +423,43 @@ async function handleModalSubmitInteraction(interaction) {
         await auditLog('edits', username, { oldData, newData: user, editedBy: interaction.user.tag });
 
         await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
-        await interaction.reply({ content: "Blacklist wurde erfolgreich aktualisert.", ephemeral: true });
-    } else if (interaction.customId === 'addUserModal') {
-        // Handle adding a new user (code remains unchanged)
-        const username = interaction.fields.getTextInputValue('username');
-        const shortReason = interaction.fields.getTextInputValue('shortReason');
-        const longReason = interaction.fields.getTextInputValue('longReason') || '';
-
-        const blacklist = JSON.parse(await fs.readFile('blacklist.json', 'utf8'));
-
-        const newEntry = {
-            username,
-            reason: shortReason,
-            date: new Date().toISOString().split('T')[0],
-            addedBy: interaction.user.tag,
-            additionalNotes: longReason
-        };
-
-        blacklist.push(newEntry);
-        await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
-        await interaction.reply({ content: `**${username}** mit kleinem 🤏 wurde der Blacklist hinzugefügt. War sicher berechtigt 🤭.`, ephemeral: true });
+        await interaction.reply({ content: "Blacklist wurde erfolgreich aktualisiert.", ephemeral: true });
+        await logAction(`**${interaction.user.tag}** hat den Blacklist-Eintrag für **${oldData.username}** angepasst. 🥸`);
     }
 }
 
 
 
 
-async function deleteBlacklistUser(interaction, index) {
+
+async function deleteBlacklistUser(interaction, index, client, logAction) {
     const data = await fs.readFile('blacklist.json', 'utf8');
     const blacklist = JSON.parse(data);
+
+    // Check if the index is valid before proceeding
     if (index < 0 || index >= blacklist.length) {
         await interaction.reply({ content: "Index out of bounds - ask Nex for help :D", ephemeral: true });
         return;
     }
-    
+
+    // Capture the username before deleting from the array
+    const deletedUsername = blacklist[index].username;  // Save the username of the user to be deleted
+
     // Creating a backup before deletion
-    await auditLog('backups', blacklist[index].username, { deletedBy: interaction.user.tag, blacklist });
+    await auditLog('backups', deletedUsername, { deletedBy: interaction.user.tag, blacklist });
 
     // Deleting the user from the blacklist
     blacklist.splice(index, 1);
     await fs.writeFile('blacklist.json', JSON.stringify(blacklist, null, 4));
-    await interaction.reply({ content: "Benutzer aus der Blacklist entfernt. 👾", ephemeral: true });
+    await interaction.reply({ content: `Benutzer **${deletedUsername}** aus der Blacklist entfernt. 👾`, ephemeral: true });
+
+    // Log the action using the saved username
+    await logAction(`**${interaction.user.tag}** hat **${deletedUsername}** aus der Blacklist entfernt. ❎`);
 }
+
+
+
+
 
 
 

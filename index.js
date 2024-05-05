@@ -57,15 +57,16 @@ console.log('Config:', config);
 
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isCommand()) {
-        await handleSlashCommand(interaction, client);
+        await handleSlashCommand(interaction, client, logAction);
     } else if (interaction.isButton()) {
-        await handleButtonInteraction(interaction);
+        await handleButtonInteraction(interaction, client, logAction);
     } else if (interaction.isStringSelectMenu()) {
-        await handleSelectMenuInteraction(interaction);
+        await handleSelectMenuInteraction(interaction, client, logAction);
     } else if (interaction.isModalSubmit()) {
-        await handleModalSubmitInteraction(interaction);
+        await handleModalSubmitInteraction(interaction, client, logAction);
     }
 });
+
 
 
 
@@ -483,6 +484,7 @@ async function handleGrantRevenger(interaction) {
 
 
 module.exports = { config };
+
 
 
 client.login(token);
