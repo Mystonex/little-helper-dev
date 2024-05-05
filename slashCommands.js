@@ -44,7 +44,11 @@ const path = require('path');
 // Utility function to write to an audit log
 async function auditLog(type, username, data) {
     const timestamp = new Date().toISOString().replace(/:/g, '-'); // Replace colons in timestamps to ensure file name is valid
-    const sanitizedUsername = username.replace(/[^a-zA-Z0-9]/g, '_'); // Replace any non-alphanumeric characters in username
+
+    // Handle username being an array or a string
+    const usernameStr = Array.isArray(username) ? username.join('_') : username;
+    const sanitizedUsername = usernameStr.replace(/[^a-zA-Z0-9]/g, '_'); // Replace any non-alphanumeric characters in username
+
     const folderPath = path.join(__dirname, 'Blacklist-Auditing', type);
     const filePath = path.join(folderPath, `${type}-${sanitizedUsername}-${timestamp}.json`);
 
@@ -66,19 +70,23 @@ async function auditLog(type, username, data) {
 
 
 
+
 async function handleSlashCommand(interaction, client, logAction) {
     switch (interaction.commandName) {
         case 'hilfe':
-            const helpMessage = `Huch, ich habe gehört, dass ich dir helfen kann?\nIch kann dir momentan folgende Funktionen anbieten, die du auf dem Server ausführen kannst:\n\n- **/hilfe** - Erhalte Hilfe von Helpina 🤩!\n- **/rename** - Ändere deinen Nicknamen!\n- **/einführung** - Starte die Einführung erneut.\n- **/blacklist** - Manage the blacklist for the server.\n\nSuchst du Guides, oder brauchst andere Hilfe?\n[Hier sind die Guides](${config.guideCH})\n\nDu kannst auch einfach die anderen RevenGER fragen \n[Andere RevenGER fragen](${config.revengerCH})`;
+            const helpMessage = `Huch, ich habe gehört, dass ich dir helfen kann?\nIch kann dir momentan folgende Funktionen anbieten, die du auf dem Server ausführen kannst:\n\n- **/hilfe** - Erhalte Hilfe von Helpina 🤩!\n- **/rename** - Ändere deinen Nicknamen!\n- **/einführung** - Starte die Einführung erneut.\n- **/blacklist** - Manage die Blacklist (nur für Leader).\n\nSuchst du Guides, oder brauchst andere Hilfe?\n[Hier sind die Guides](${config.guideCH})\n\nDu kannst auch einfach die anderen RevenGER fragen \n[Andere RevenGER fragen](${config.revengerCH})`;
             await interaction.user.send(helpMessage);
             await interaction.reply({ content: 'Ich habe dir eine DM mit weiteren Informationen geschickt!', ephemeral: true });
+            logAction(`**${interaction.user.tag}** hat den **/hilfe** command genutzt 😬`);
             break;
         case 'rename':
             await interaction.showModal(createRenameModal());
+            logAction(`**${interaction.user.tag}** hat den **/rename** command genutzt 👉 👈`);
             break;
         case 'einführung':
             client.emit('guildMemberAdd', interaction.member);
             await interaction.reply({ content: 'Die Einführung wurde neu gestartet!', ephemeral: true });
+            logAction(`**${interaction.user.tag}** hat den **/einführung** command genutzt 🧙‍♂️`);
             break;
         case 'blacklist':
             if (!interaction.member.roles.cache.has(config.leaderRoleId) && !interaction.member.roles.cache.has(config.vizeRoleId)) {
@@ -158,7 +166,7 @@ async function showSelectMenu(interaction) {
 
     await interaction.reply({
         content: 'Willkommen im Helpina Blacklist Manager.\nMit den Buttons unten, kannst du einzelne Funktionen aktivieren:\n\n- **Benutzer Hinzufügen** - Fügt einen neuen Benutzer der Blacklist hinzu.\n- **Benutzer Bearbeiten** - Wähle und bearbeite bestehende Blacklist-Benutzer.\n- **Blacklist Anschauen** - Zeigt dir einen aktuellen Auszug der Blacklist.\n- **Blacklist Posten** - Helpina Postet die aktuelle Blacklist im aktuellen Channel.\n\n',
-        components: [new ActionRowBuilder().addComponents(addButton, editButton, listButton)],
+        components: [new ActionRowBuilder().addComponents(addButton, editButton)],
         ephemeral: true
     });
 }
@@ -211,7 +219,7 @@ async function handleButtonInteraction(interaction, client, logAction) {
         await showSelectMenuForEditing(interaction, client, logAction);
     } else if (interaction.customId === 'manageBlacklist') {
         // Log action
-        logAction(`Blacklist management activated by ${interaction.user.tag}`);
+        logAction(`Blacklist-Management aktiviert von **${interaction.user.tag}** 😳`);
         // Check user roles before showing the menu
         if (!interaction.member.roles.cache.has(config.leaderRoleId) && !interaction.member.roles.cache.has(config.vizeRoleId)) {
             await interaction.reply({ content: "Du bist kein Führungsmitglied und darfst diesen Command nicht nutzen! 🤡", ephemeral: true });

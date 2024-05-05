@@ -155,20 +155,29 @@ async function postPinnedBlacklistMessage() {
         const embed = new EmbedBuilder()
             .setColor('#57F287')
             .setTitle('🚫 Blacklist-Verwaltung mit Helpina!')
-            .setDescription('Hallo zusammen! 👋 Ich bin Helpina, euer Helfer für das Blacklist-Management hier auf dem Server. Mit dem untenstehenden Button könnt ihr mich jederzeit aktivieren, um die Blacklist zu verwalten.')
-            .setFooter({ text: 'Klickt auf den Button, um zu starten!', iconURL: 'https://icons.iconarchive.com/icons/custom-icon-design/flat-cute-arrows/256/Button-Arrow-Down-1-icon.png' });
+            .setDescription('Hallo zusammen! 👋 Ich bin Helpina, euer Helfer für das Blacklist-Management hier auf dem Server. Mit den untenstehenden Buttons könnt ihr mich jederzeit aktivieren, um die Blacklist zu verwalten oder anzuschauen.')
+            .setFooter({ text: 'Klickt auf die Buttons, um zu starten!', iconURL: 'https://icons.iconarchive.com/icons/custom-icon-design/flat-cute-arrows/256/Button-Arrow-Down-1-icon.png' });
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId('manageBlacklist')
-                .setLabel('Blacklist managen 🛠')
-                .setStyle(ButtonStyle.Primary)
-        );
+        // Manage Blacklist Button
+        const manageButton = new ButtonBuilder()
+            .setCustomId('manageBlacklist')
+            .setLabel('Blacklist managen 🛠')
+            .setStyle(ButtonStyle.Primary);
+
+        // View Blacklist Button
+        const listButton = new ButtonBuilder()
+            .setCustomId('list-blacklist-users')
+            .setLabel('Blacklist Anschauen')
+            .setStyle(ButtonStyle.Secondary);
+
+        // Row of buttons
+        const row = new ActionRowBuilder().addComponents(manageButton, listButton);
 
         const message = await channel.send({ embeds: [embed], components: [row] });
         await message.pin();
     }
 }
+
 
 
 
@@ -406,7 +415,7 @@ async function initiateNicknameSetting(interaction) {
     console.log(`Sending setNickname with ID: ${customId}`);
 
     const message = await welcomeChannel.send({
-        content: `<@${interaction.user.id}>, 🫵 Sagst du mir deinen Ingame Namen?`,
+        content: `<@${interaction.user.id}>, 👉 👈  Sagst du mir deinen Ingame Namen?`,
         embeds: [new EmbedBuilder().setImage(`${config.nameGIF}`)],
         components: [new ActionRowBuilder().addComponents(setNicknameButton)]
     });
