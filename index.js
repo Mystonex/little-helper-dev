@@ -38,15 +38,16 @@ async function logAction(message) {
 client.once('ready', async () => {
     console.log('Bot is online!');
     logAction('🤖 Nex hat den Bot gestartet und ist nun Online 🤖');
-    await registerCommands(client.user.id);  // Ensuring commands are registered after the bot is ready
+    await registerCommands(client.user.id);
     client.user.setPresence({
         activities: [{
             name: 'Wartet auf /hilfe Rufe 🤖',
-            type: 4  // Custom status type
+            type: ActivityType.Custom
         }],
         status: 'online'
     });
     setupTranslationListener(client, `${config.dragonewsCH}`);
+    postPinnedBlacklistMessage(); // Call this function to post and pin the message
 });
 
 
@@ -57,7 +58,7 @@ console.log('Config:', config);
 
 client.on('interactionCreate', async (interaction) => {
     if (interaction.isCommand()) {
-        await handleSlashCommand(interaction, client, logAction);
+        await handleSlashCommand(interaction, client, logAction); // Assuming logAction is defined somewhere
     } else if (interaction.isButton()) {
         await handleButtonInteraction(interaction, client, logAction);
     } else if (interaction.isStringSelectMenu()) {
@@ -66,6 +67,9 @@ client.on('interactionCreate', async (interaction) => {
         await handleModalSubmitInteraction(interaction, client, logAction);
     }
 });
+
+
+
 
 
 
@@ -141,6 +145,30 @@ client.on('interactionCreate', async interaction => {
     }
 });
 
+
+async function postPinnedBlacklistMessage() {
+    const channel = await client.channels.fetch(config.blacklistCH);
+    const pins = await channel.messages.fetchPinned();
+    const alreadyPinned = pins.some(msg => msg.author.id === client.user.id && msg.embeds.length > 0 && msg.embeds[0].title.includes('Blacklist-Verwaltung'));
+
+    if (!alreadyPinned) {
+        const embed = new EmbedBuilder()
+            .setColor('#57F287')
+            .setTitle('🚫 Blacklist-Verwaltung mit Helpina!')
+            .setDescription('Hallo zusammen! 👋 Ich bin Helpina, euer Helfer für das Blacklist-Management hier auf dem Server. Mit dem untenstehenden Button könnt ihr mich jederzeit aktivieren, um die Blacklist zu verwalten.')
+            .setFooter({ text: 'Klickt auf den Button, um zu starten!', iconURL: 'https://icons.iconarchive.com/icons/custom-icon-design/flat-cute-arrows/256/Button-Arrow-Down-1-icon.png' });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId('manageBlacklist')
+                .setLabel('Blacklist managen 🛠')
+                .setStyle(ButtonStyle.Primary)
+        );
+
+        const message = await channel.send({ embeds: [embed], components: [row] });
+        await message.pin();
+    }
+}
 
 
 

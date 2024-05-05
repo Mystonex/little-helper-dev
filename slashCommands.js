@@ -158,7 +158,7 @@ async function showSelectMenu(interaction) {
 
     await interaction.reply({
         content: 'Willkommen im Helpina Blacklist Manager.\nMit den Buttons unten, kannst du einzelne Funktionen aktivieren:\n\n- **Benutzer Hinzufügen** - Fügt einen neuen Benutzer der Blacklist hinzu.\n- **Benutzer Bearbeiten** - Wähle und bearbeite bestehende Blacklist-Benutzer.\n- **Blacklist Anschauen** - Zeigt dir einen aktuellen Auszug der Blacklist.\n- **Blacklist Posten** - Helpina Postet die aktuelle Blacklist im aktuellen Channel.\n\n',
-        components: [new ActionRowBuilder().addComponents(addButton, editButton, listButton, postButton)],
+        components: [new ActionRowBuilder().addComponents(addButton, editButton, listButton)],
         ephemeral: true
     });
 }
@@ -209,8 +209,23 @@ async function handleButtonInteraction(interaction, client, logAction) {
         await postBlacklist(interaction, client, logAction);
     } else if (interaction.customId === 'edit-blacklist-user') {
         await showSelectMenuForEditing(interaction, client, logAction);
+    } else if (interaction.customId === 'manageBlacklist') {
+        // Log action
+        logAction(`Blacklist management activated by ${interaction.user.tag}`);
+        // Check user roles before showing the menu
+        if (!interaction.member.roles.cache.has(config.leaderRoleId) && !interaction.member.roles.cache.has(config.vizeRoleId)) {
+            await interaction.reply({ content: "Du bist kein Führungsmitglied und darfst diesen Command nicht nutzen! 🤡", ephemeral: true });
+        } else {
+            // Show the same select menu as the /blacklist command
+            await showSelectMenu(interaction);
+        }
+    } else {
+        console.log(`Unhandled button interaction: ${interaction.customId}`);
+        await interaction.reply({ content: "Dieser Button hat keine zugeordnete Aktion.", ephemeral: true });
     }
 }
+
+
 
 
 

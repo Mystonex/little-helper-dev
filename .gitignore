@@ -1,4 +1,4 @@
-# Ignore .env files
+# Ignore specific Files
 .env
 blacklist.json
 
