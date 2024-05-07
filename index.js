@@ -56,7 +56,67 @@ console.log('Config:', config);
 
 
 
+
+
 client.on('interactionCreate', async (interaction) => {
+    if (interaction.isCommand()) {
+        await handleSlashCommand(interaction, client, logAction);
+    } else if (interaction.isButton()) {
+        const customIdParts = interaction.customId.split('-');
+        const action = customIdParts[0];
+        const userId = customIdParts.length > 1 ? customIdParts[1] : null;
+
+        console.log(`Action: ${action}, Expected User ID: ${userId}, Actual User ID: ${interaction.user.id}`);
+
+        // Check action and handle locally except 'grantRevenger'
+        if (['redirectToRules', 'acceptRules', 'setNickname'].includes(action)) {
+            if (userId === null || userId !== interaction.user.id) {
+                await logAction(`**${interaction.user.tag}**  war zu Dumm um zu lesen - er wollte den Button drücken. 🤦`);
+                return interaction.reply({ content: `Hey, dieser Button ist nicht für dich. Wenn ich dir helfen soll, dann schreib einfach in einen Channel /hilfe`, ephemeral: true });
+            }
+            switch (action) {
+                case 'redirectToRules':
+                    await handleRedirectToRules(interaction);
+                    break;
+                case 'acceptRules':
+                    await handleAcceptRules(interaction);
+                    break;
+                case 'setNickname':
+                    await handleSetNickname(interaction);
+                    break;
+            }
+        } else if (interaction.customId.startsWith('grantRevenger')) {
+            // Directly handle 'grantRevenger' without user ID validation here
+            await handleGrantRevenger(interaction);
+        } else {
+            // Delegate other button interactions
+            await handleButtonInteraction(interaction, client, logAction);
+        }
+    } else if (interaction.isStringSelectMenu()) {
+        await handleSelectMenuInteraction(interaction, client, logAction);
+    } else if (interaction.isModalSubmit()) {
+        const modalId = interaction.customId;
+        if (modalId === 'nicknameModal' || modalId === 'renameNicknameModal') {
+            if (modalId === 'nicknameModal') {
+                await handleNicknameModalSubmit(interaction);
+            } else if (modalId === 'renameNicknameModal') {
+                await handleNicknameModalSubmitForRename(interaction);
+            }
+        } else {
+            // Delegate other modal submissions
+            await handleModalSubmitInteraction(interaction, client, logAction);
+        }
+    }
+});
+
+
+
+
+
+
+
+
+/* client.on('interactionCreate', async (interaction) => {
     if (interaction.isCommand()) {
         await handleSlashCommand(interaction, client, logAction); // Assuming logAction is defined somewhere
     } else if (interaction.isButton()) {
@@ -66,7 +126,7 @@ client.on('interactionCreate', async (interaction) => {
     } else if (interaction.isModalSubmit()) {
         await handleModalSubmitInteraction(interaction, client, logAction);
     }
-});
+}); */
 
 
 
@@ -102,7 +162,7 @@ client.on('guildMemberAdd', async member => {
 });
 
 
-client.on('interactionCreate', async interaction => {
+/* client.on('interactionCreate', async interaction => {
     if (interaction.isButton()) {
         const customIdParts = interaction.customId.split('-');
         const action = customIdParts[0];
@@ -143,7 +203,7 @@ client.on('interactionCreate', async interaction => {
                 break;
         }
     }
-});
+}); */
 
 
 async function postPinnedBlacklistMessage() {
