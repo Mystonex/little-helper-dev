@@ -20,6 +20,7 @@ const config = {
     blacklistCH: process.env.BLACKLIST_CH,
     vizeRoleId: process.env.VIZE_ROLE_ID,
     leaderRoleId: process.env.LEADER_ROLE_CH,
+    newjoinerCH: process.env.NEW_JOINER_CH,   
 };
 
 module.exports = config;

@@ -35,6 +35,8 @@ async function logAction(message) {
     }
 }
 
+
+
 client.once('ready', async () => {
     console.log('Bot is online!');
     logAction('🤖 Nex hat den Bot gestartet und ist nun Online 🤖');
@@ -53,8 +55,6 @@ client.once('ready', async () => {
 
 
 console.log('Config:', config);
-
-
 
 
 
@@ -112,32 +112,6 @@ client.on('interactionCreate', async (interaction) => {
 
 
 
-
-
-
-
-/* client.on('interactionCreate', async (interaction) => {
-    if (interaction.isCommand()) {
-        await handleSlashCommand(interaction, client, logAction); // Assuming logAction is defined somewhere
-    } else if (interaction.isButton()) {
-        await handleButtonInteraction(interaction, client, logAction);
-    } else if (interaction.isStringSelectMenu()) {
-        await handleSelectMenuInteraction(interaction, client, logAction);
-    } else if (interaction.isModalSubmit()) {
-        await handleModalSubmitInteraction(interaction, client, logAction);
-    }
-}); */
-
-
-
-
-
-
-
-
-
-
-
 client.on('guildMemberAdd', async member => {
     const welcomeChannel = await client.channels.fetch(config.welcomeChannelId);
     const welcomeMessage = new EmbedBuilder()
@@ -162,48 +136,26 @@ client.on('guildMemberAdd', async member => {
 });
 
 
-/* client.on('interactionCreate', async interaction => {
-    if (interaction.isButton()) {
-        const customIdParts = interaction.customId.split('-');
-        const action = customIdParts[0];
-        const userId = customIdParts.length > 1 ? customIdParts[1] : null;  // Check if there's a user ID
 
-        // Log the user IDs for debugging
-        console.log(`Action: ${action}, Expected User ID: ${userId}, Actual User ID: ${interaction.user.id}`);
 
-        // If an action requires a user ID and either it's missing or doesn't match the clicking user
-        if (['redirectToRules', 'acceptRules', 'setNickname'].includes(action) && (userId === null || userId !== interaction.user.id)) {
-            await logAction(`**${interaction.user.tag}** war zu Dumm um zu lesen - er wollte den Button drücken. 🤦`);
-            return interaction.reply({ content: `Hey, dieser Button ist nicht für dich. Wenn ich dir helfen soll, dann schreib einfach in einen Channel /hilfe`, ephemeral: true });
-        }
 
-        switch (action) {
-            case 'redirectToRules':
-                await handleRedirectToRules(interaction);
-                break;
-            case 'acceptRules':
-                await handleAcceptRules(interaction);
-                break;
-            case 'setNickname':
-                await handleSetNickname(interaction);
-                break;
-            default:
-                if (interaction.customId.startsWith('grantRevenger')) {
-                    await handleGrantRevenger(interaction);
-                }
-                break;
-        }
-    } else if (interaction.isModalSubmit()) {
-        switch (interaction.customId) {
-            case 'nicknameModal':  // Handling onboarding nickname modal
-                await handleNicknameModalSubmit(interaction);
-                break;
-            case 'renameNicknameModal':  // Handling rename command modal
-                await handleNicknameModalSubmitForRename(interaction);
-                break;
-        }
-    }
-}); */
+client.on('guildMemberRemove', async member => {
+    const newjoinerchannel = await client.channels.fetch(config.newjoinerCH);
+    const LeaverMessage = new EmbedBuilder()
+        .setColor('#0099ff')
+        .setTitle(`${member.user.username} hat den Discord verlassen.`);
+
+    await newjoinerchannel.send({
+        content: `Austrittsnachricht`,
+        embeds: [LeaverMessage]
+
+    });
+ 
+    logAction(`Der Hund Namens **${member.user.tag}** hat uns verlassen.. zum glück.`);
+});
+
+
+
 
 
 async function postPinnedBlacklistMessage() {
