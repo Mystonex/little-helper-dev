@@ -5,26 +5,41 @@ const { TextInputStyle, ButtonStyle, InteractionType } = require('discord.js');
 const fs = require('fs').promises;
 const config = require('./config');
 require('dotenv').config();
+const net = require('net');
 
 
 const commands = [
     new SlashCommandBuilder()
         .setName('hilfe')
-        .setDescription('Erhalte Hilfe von Helpina 🤩!')
+        .setDescription('Erhalte Hilfe von Helpina 🤩')
         .toJSON(),
     new SlashCommandBuilder()
         .setName('rename')
-        .setDescription('Ändere deinen Nicknamen!')
+        .setDescription('Ändere deinen Nicknamen! 📝')
         .toJSON(),
     new SlashCommandBuilder()
         .setName('einführung')
-        .setDescription('Starte die Einführung erneut!')
+        .setDescription('Starte die Einführung erneut 🔄')
         .toJSON(),
     new SlashCommandBuilder()
         .setName('blacklist')
-        .setDescription('Blacklist Managen ❌.')
+        .setDescription('Blacklist Managen ❌')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('ticket')
+        .setDescription('Erhalte Informationen zum Ticketsystem 🎫')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('dragonsaga')
+        .setDescription('Erhalte Informationen zum Dragonsaga Server-Status 🎮')
+        .toJSON(),
+    new SlashCommandBuilder()
+        .setName('status')
+        .setDescription('Überprüft den Status von Helpina 🔍')
         .toJSON()
 ];
+
+
 
 const rest = new REST({ version: '9' }).setToken(process.env.BOT_TOKEN);
 
@@ -66,7 +81,20 @@ async function auditLog(type, username, data) {
 
 
 
+async function checkTcpPort(ip, port) {
+    return new Promise((resolve) => {
+        const start = Date.now();
+        const client = net.createConnection({ host: ip, port: parseInt(port) }, () => {
+            const duration = Date.now() - start;
+            client.end();
+            resolve({ status: 'open', output: `${duration} ms` });
+        });
 
+        client.on('error', () => {
+            resolve({ status: 'closed', output: 'Server scheint Offline zu sein 😖' });
+        });
+    });
+}
 
 
 
@@ -74,11 +102,33 @@ async function auditLog(type, username, data) {
 async function handleSlashCommand(interaction, client, logAction) {
     switch (interaction.commandName) {
         case 'hilfe':
-            const helpMessage = `Huch, ich habe gehört, dass ich dir helfen kann?\nIch kann dir momentan folgende Funktionen anbieten, die du auf dem Server ausführen kannst:\n\n- **/hilfe** - Erhalte Hilfe von Helpina 🤩!\n- **/rename** - Ändere deinen Nicknamen!\n- **/einführung** - Starte die Einführung erneut.\n- **/blacklist** - Manage die Blacklist (nur für Leader).\n\nSuchst du Guides, oder brauchst andere Hilfe?\n[Hier sind die Guides](${config.guideCH})\n\nDu kannst auch einfach die anderen RevenGER fragen \n[Andere RevenGER fragen](${config.revengerCH})`;
+            const helpMessage = `
+        Hallo! 👋 Ich habe gehört, dass du Hilfe brauchst – keine Sorge, Helpina ist hier! 💪
+     
+Hier sind die **Funktionen**, die du momentan auf dem Server ausführen kannst:
+         
+        - **/hilfe** - Erhalte Hilfe von Helpina 🤩
+        - **/rename** - Ändere deinen Nicknamen 📝
+        - **/einführung** - Starte die Einführung erneut 🔄
+        - **/blacklist** - Manage die Blacklist (nur für Leader) ❌
+        - **/ticket** - Hilfe in Bezug auf Tickets 🎫
+        - **/status** - Status von Helpina einsehen 🟢
+        - **/dragonsaga** - Status von Dragonsaga Servern einsehen 🟢
+        
+        -------------------------------------
+        
+        🔗 **Nützliche Links:**  
+        - [Hier sind die Guides](${config.guideCH}) 📚  
+        - [Andere RevenGER fragen](${config.revengerCH}) 🗣
+        
+        Schreib einfach den gewünschten Befehl im Chat – ich bin bereit zu helfen!
+            `;
+        
             await interaction.user.send(helpMessage);
             await interaction.reply({ content: 'Ich habe dir eine DM mit weiteren Informationen geschickt!', ephemeral: true });
             logAction(`**${interaction.user.tag}** hat den **/hilfe** command genutzt 😬`);
             break;
+        
         case 'rename':
             await interaction.showModal(createRenameModal());
             logAction(`**${interaction.user.tag}** hat den **/rename** command genutzt 👉 👈`);
@@ -89,13 +139,96 @@ async function handleSlashCommand(interaction, client, logAction) {
             logAction(`**${interaction.user.tag}** hat den **/einführung** command genutzt 🧙‍♂️`);
             break;
         case 'blacklist':
-            if (!interaction.member.roles.cache.has(config.leaderRoleId) && !interaction.member.roles.cache.has(config.vizeRoleId)) {
+            // Check if the interaction is in a guild and if the user has the correct roles
+            if (!interaction.member || (!interaction.member.roles.cache.has(config.leaderRoleId) && !interaction.member.roles.cache.has(config.vizeRoleId))) {
                 return interaction.reply({ content: "Du bist kein Führungsmitglied und darfst diesen Command nicht nutzen! 🤡", ephemeral: true });
             }
             showSelectMenu(interaction);
             break;
+            
+        case 'status':  // New status command
+            // Determine the bot’s health status
+            const statusEmbed = new EmbedBuilder()
+                .setTitle("Status von Helpina")
+                .setDescription("Helpina ist aktiv und funktioniert einwandfrei!") // Default to healthy message
+                .setColor(0x57F287); // Green flag
+
+            // Respond with a status message
+            await interaction.reply({
+                embeds: [statusEmbed],
+                ephemeral: true // Private message
+            });
+
+            logAction(`**${interaction.user.tag}** hat den **/status** command genutzt, um den Status zu überprüfen. 🟢`);
+            break;
+        case 'dragonsaga':
+            await interaction.deferReply({ ephemeral: true }); // Defers the reply, acknowledging the interaction
+        
+            const servers = [
+                { name: 'EU1 Logonserver', ip: '35.156.19.61', port: 12035 },
+                { name: 'Game Server 1', ip: '35.186.224.45', port: 443 },
+                { name: 'Game Server 2', ip: '44.219.118.213', port: 443 }
+            ];
+        
+            const serverStatusPromises = servers.map(async (server) => {
+                const result = await checkTcpPort(server.ip, server.port);
+                const embed = new EmbedBuilder()
+                    .setTitle(`${server.name} (${server.ip})`)
+                    .setColor(result.status === 'open' ? 0x57F287 : 0xED4245)  // Green if open, red if closed
+                    .addFields(
+                        { name: 'Status:', value: result.status === 'open' ? 'Server ist Erreichbar 🤩' : 'Server scheint Offline zu sein 😖' },
+                        { name: 'Latenz:', value: result.status === 'open' ? result.output : 'N/A' }
+                    );
+                return embed;
+            });
+        
+            const serverStatuses = await Promise.all(serverStatusPromises);
+        
+            // Send the final response
+            await interaction.editReply({
+                embeds: serverStatuses
+            });
+        
+            logAction(`**${interaction.user.tag}** has checked the DragonSaga server status 🟢`);
+            break;
+            
+            
+            
+        case 'ticket':  // New case for ticket command
+            const ticketEmbed = new EmbedBuilder()
+                .setColor(0x0099ff)
+                .setImage('https://i.imgur.com/QQHSGtO.png') // Ensure the image is at the top
+                .setDescription(
+                    "**Wichtige Info zum Ticketsystem:**\n\n" +
+                    "Bevor du ein Ticket schreibst, **erstelle dir bitte einen Support-Account**. " +
+                    "Das geht einfach und schnell:\n\n" +
+                    "➡️ **Klicke auf 'Registrieren'** und gib deine Angaben ein.\n\n" +
+                    "Sobald du registriert bist, kannst du problemlos **Tickets Erstellen** und Support anfragen."
+                );
+
+            // Create the buttons for Ticket Link and Registration Link
+            const ticketButton = new ButtonBuilder()
+                .setLabel('Ticket Erstellen')
+                .setStyle(ButtonStyle.Link)
+                .setURL('https://support.warpportal.com/Main/');
+
+            const registerButton = new ButtonBuilder()
+                .setLabel('Registrieren')
+                .setStyle(ButtonStyle.Link)
+                .setURL('https://support.warpportal.com/Main/frmRegister.aspx');
+
+            // Action row with buttons
+            const actionRow = new ActionRowBuilder().addComponents(ticketButton, registerButton);
+
+            // Send the DM with the embed and buttons
+            await interaction.user.send({ embeds: [ticketEmbed], components: [actionRow] });
+            await interaction.reply({ content: 'Ich habe dir eine DM mit den Ticketinformationen geschickt!', ephemeral: true });
+            logAction(`**${interaction.user.tag}** hat den **/ticket** command genutzt 🧾`);
+            break;
     }
 }
+
+
 
 function createRenameModal() {
     return new ModalBuilder()

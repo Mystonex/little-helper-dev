@@ -3,7 +3,7 @@ const { Client, GatewayIntentBits, EmbedBuilder, ButtonBuilder, ButtonStyle, Act
 const { registerCommands, handleSlashCommand, handleModalSubmitInteraction, handleButtonInteraction, handleSelectMenuInteraction } = require('./slashCommands');
 const { setupTranslationListener } = require('./translation'); // include of the translate-bot
 const config = require('./config');
- 
+
 
 
 
@@ -136,23 +136,67 @@ client.on('guildMemberAdd', async member => {
 });
 
 
-
-
-
-client.on('guildMemberRemove', async member => {
-    const newjoinerchannel = await client.channels.fetch(config.newjoinerCH);
-    const LeaverMessage = new EmbedBuilder()
-        .setColor('#0099ff')
-        .setTitle(`${member.user.username} hat den Discord verlassen.`);
-
-    await newjoinerchannel.send({
-        content: `Austrittsnachricht`,
-        embeds: [LeaverMessage]
-
-    });
- 
-    logAction(`Der Hund Namens **${member.user.tag}** hat uns verlassen.. zum glück.`);
+// Add listeners to monitor connection stability
+client.on('ready', () => {
+    console.log(`Logged in as ${client.user.tag}`);
 });
+
+client.on('shardError', (error) => {
+    console.error('A websocket connection encountered an error:', error);
+});
+
+client.on('disconnect', (event) => {
+    console.warn('Bot disconnected:', event);
+});
+
+client.on('reconnecting', () => {
+    console.log('Bot is reconnecting...');
+});
+
+client.on('rateLimit', (info) => {
+    console.warn('Rate limit hit:', info);
+});
+
+client.on('raw', async (packet) => {
+    if (packet.t === 'GUILD_MEMBER_REMOVE') {
+        const userId = packet.d.user.id; // Get the user ID from the raw event data
+        const guildId = packet.d.guild_id; // Get the guild ID to ensure we're in the right server
+
+        console.log(`Detected GUILD_MEMBER_REMOVE for user ID: ${userId}`);
+
+        try {
+            // Fetch the guild and log channel for the message
+            const guild = await client.guilds.fetch(guildId);
+            const newjoinerChannel = await client.channels.fetch(config.newjoinerCH);
+            
+            if (!newjoinerChannel) {
+                console.error(`Channel with ID ${config.newjoinerCH} not found.`);
+                return;
+            }
+
+            // Fetch user information to get the username (optional but useful for message)
+            const user = await client.users.fetch(userId);
+            const leaverMessage = `${user.username} hat den Discord verlassen.`;
+
+            // Send the leave message to the specified channel
+            await newjoinerChannel.send(leaverMessage);
+            await logAction(`Der Hund namens **${user.tag}** hat uns verlassen... zum Glück.`);
+            
+            console.log(`Successfully handled leave event for ${user.tag}`);
+        } catch (error) {
+            console.error('Error in handling member leave from raw event:', error);
+        }
+    }
+});
+
+
+
+
+
+
+
+
+
 
 
 
@@ -491,9 +535,9 @@ async function handleGrantRevenger(interaction) {
 
     // Follow up with a visible confirmation message
     await interaction.followUp({
-        content: `Revenger Rolle erfolgreich an **${user.user.tag}** zugewiesen von **${leaderTag}**👌🏼.`
+        content: `Revenger Rolle erfolgreich an **${user.displayName}** zugewiesen von **${leaderTag}**👌🏼.`
     });
-    logAction(`Revenger Rolle erfolgreich an **${user.user.tag}** zugewiesen von **${leaderTag}**👌🏼`);
+    logAction(`Revenger Rolle erfolgreich an **${user.displayName}** zugewiesen von **${leaderTag}**👌🏼`);
 
     // Send a DM to the user with the role assignment confirmation and additional resources
     const dmEmbed = new EmbedBuilder()
